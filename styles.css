@@ -310,6 +310,39 @@ input.text-input {
   resize: vertical;
 }
 
+.elevation-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 16px;
+  color: #354139;
+  cursor: pointer;
+}
+
+.elevation-option input {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+  margin: 1px 0 0;
+  accent-color: var(--green);
+}
+
+.elevation-option span {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.elevation-option strong {
+  font-size: 12px;
+}
+
+.elevation-option small {
+  color: #89918b;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
 .filename-card {
   display: flex;
   align-items: center;

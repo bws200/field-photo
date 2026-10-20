@@ -7,6 +7,8 @@ const retakeButton = document.querySelector("#retake-button");
 const fileInput = document.querySelector("#file-input");
 const descriptionInput = document.querySelector("#description");
 const noteInput = document.querySelector("#note");
+const elevationInput = document.querySelector("#elevation-toggle");
+const elevationHelp = document.querySelector("#elevation-help");
 const filenameElement = document.querySelector("#filename");
 const saveButton = document.querySelector("#save-button");
 const statusMessage = document.querySelector("#status-message");
@@ -16,6 +18,42 @@ let stream = null;
 let photo = null;
 let capturedAt = null;
 let previewUrl = null;
+let latestElevation = null;
+let latestElevationAt = 0;
+let capturedElevation = null;
+
+const orientationAngle = () => window.screen.orientation?.angle ?? window.orientation ?? 0;
+const normalizeAngle = (angle) => ((angle + 180) % 360 + 360) % 360 - 180;
+
+if (!("DeviceOrientationEvent" in window)) {
+  elevationInput.disabled = true;
+  elevationHelp.textContent = "Camera tilt sensing is not available in this browser.";
+}
+
+function recordOrientation(event) {
+  const angle = orientationAngle();
+  if (event.beta === null || !Number.isFinite(event.beta) || ![0, 180].includes(angle)) {
+    latestElevation = null;
+    return;
+  }
+  latestElevation = normalizeAngle(event.beta - 90 + angle);
+  latestElevationAt = Date.now();
+}
+
+async function enableOrientationSensor() {
+  const requestPermission = window.DeviceOrientationEvent?.requestPermission;
+  if (typeof requestPermission === "function") {
+    const permission = await requestPermission.call(window.DeviceOrientationEvent);
+    if (permission !== "granted") {
+      throw new Error("Motion sensor permission was not granted.");
+    }
+  }
+  window.addEventListener("deviceorientation", recordOrientation);
+}
+
+function getCurrentElevation() {
+  return Date.now() - latestElevationAt <= 1500 ? latestElevation : null;
+}
 
 function setStatus(message = "") {
   statusMessage.textContent = message;
@@ -125,7 +163,7 @@ function getExifTakenAt(buffer) {
 
 async function openCamera() {
   setStatus("");
-  if (window.matchMedia("(pointer: coarse)").matches) {
+  if (window.matchMedia("(pointer: coarse)").matches && !elevationInput.checked) {
     fileInput.click();
     return;
   }
@@ -234,14 +272,18 @@ function renderPreview() {
   const { stamp } = getTimestamp(capturedAt);
   const description = descriptionInput.value.trim();
   const firstLine = description ? `${stamp} · ${description}` : stamp;
+  const elevationLines = elevationInput.checked && capturedElevation !== null
+    ? [`Elevation: ${Math.round(capturedElevation)}°`]
+    : [];
   const maxTextWidth = width - padding * 2;
   const fontFamily = '600 ' + fontSize + 'px "DM Sans", sans-serif';
 
   context.font = fontFamily;
   const firstLines = wrapText(firstLine, maxTextWidth, context);
+  const wrappedElevationLines = elevationLines.flatMap((line) => wrapText(line, maxTextWidth, context));
   const noteLines = wrapText(noteInput.value, maxTextWidth, context);
   const gap = noteLines.length ? lineHeight * 0.35 : 0;
-  const textHeight = (firstLines.length + noteLines.length) * lineHeight + gap;
+  const textHeight = (firstLines.length + wrappedElevationLines.length + noteLines.length) * lineHeight + gap;
   const footerPadding = padding * 0.75;
   const footerHeight = textHeight + footerPadding * 2;
 
@@ -253,6 +295,10 @@ function renderPreview() {
 
   let y = height - footerHeight + footerPadding;
   for (const line of firstLines) {
+    context.fillText(line, padding, y);
+    y += lineHeight;
+  }
+  for (const line of wrappedElevationLines) {
     context.fillText(line, padding, y);
     y += lineHeight;
   }
@@ -271,11 +317,12 @@ function renderPreview() {
   saveButton.disabled = false;
 }
 
-function loadImage(blob, takenAt, statusMessageAfterLoad = "") {
+function loadImage(blob, takenAt, statusMessageAfterLoad = "", elevation = null) {
   if (previewUrl) URL.revokeObjectURL(previewUrl);
   previewUrl = URL.createObjectURL(blob);
   photo = null;
   capturedAt = null;
+  capturedElevation = elevation;
   saveButton.disabled = true;
   photo = new Image();
   photo.onload = () => {
@@ -304,6 +351,31 @@ function loadImage(blob, takenAt, statusMessageAfterLoad = "") {
 
 cameraButton.addEventListener("click", openCamera);
 
+elevationInput.addEventListener("change", async () => {
+  if (!elevationInput.checked) {
+    window.removeEventListener("deviceorientation", recordOrientation);
+    latestElevation = null;
+    latestElevationAt = 0;
+    renderPreview();
+    return;
+  }
+
+  try {
+    await enableOrientationSensor();
+    if (photo) {
+      setStatus("Elevation is available for photos taken with the in-page camera.");
+    } else {
+      setStatus("Tilt sensing is on. Take a photo with the in-page camera to stamp its elevation.");
+    }
+  } catch (error) {
+    elevationInput.checked = false;
+    window.removeEventListener("deviceorientation", recordOrientation);
+    setStatus(error.message || "Could not access the camera tilt sensor.");
+    return;
+  }
+  renderPreview();
+});
+
 captureButton.addEventListener("click", () => {
   if (!camera.videoWidth || !camera.videoHeight) {
     setStatus("The camera is not ready yet. Try again in a moment.");
@@ -315,13 +387,17 @@ captureButton.addEventListener("click", () => {
   capturedPhoto.height = camera.videoHeight;
   capturedPhoto.getContext("2d").drawImage(camera, 0, 0);
   const takenAt = new Date();
+  capturedElevation = elevationInput.checked ? getCurrentElevation() : null;
+  const captureStatus = elevationInput.checked && capturedElevation === null
+    ? "No current tilt reading was available; the photo was captured without an elevation line."
+    : "";
   capturedPhoto.toBlob((blob) => {
     if (!blob) {
       setStatus("Could not capture the photo. Please try again.");
       return;
     }
     stopCamera();
-    loadImage(blob, takenAt);
+    loadImage(blob, takenAt, captureStatus, capturedElevation);
   }, "image/jpeg", 0.95);
 });
 
@@ -337,10 +413,14 @@ fileInput.addEventListener("change", async () => {
       const status = exifTakenAt
         ? "Using the capture time stored in this photo."
         : "No capture time found in the photo; using its file modified time.";
-      loadImage(file, takenAt, status);
+      loadImage(file, takenAt, elevationInput.checked
+        ? `${status} Elevation is only available for photos taken with the in-page camera.`
+        : status);
     } catch (error) {
       console.error("Could not read photo capture time.", error);
-      loadImage(file, new Date(file.lastModified), "Could not read capture metadata; using the file's modified time.");
+      loadImage(file, new Date(file.lastModified), elevationInput.checked
+        ? "Could not read capture metadata; using the file's modified time. Elevation is only available for photos taken with the in-page camera."
+        : "Could not read capture metadata; using the file's modified time.");
     }
   }
   fileInput.value = "";
