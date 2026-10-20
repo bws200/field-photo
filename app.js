@@ -1,5 +1,10 @@
 const camera = document.querySelector("#camera");
 const angleOverlay = document.querySelector("#angle-overlay");
+const cameraMetrics = document.querySelector("#camera-metrics");
+const cameraAimValue = document.querySelector("#camera-aim");
+const sideTiltValue = document.querySelector("#side-tilt");
+const calibrationStatus = document.querySelector("#calibration-status");
+const calibrateButton = document.querySelector("#calibrate-button");
 const preview = document.querySelector("#preview");
 const emptyState = document.querySelector("#empty-state");
 const cameraButton = document.querySelector("#camera-button");
@@ -15,14 +20,71 @@ const filenameElement = document.querySelector("#filename");
 const saveButton = document.querySelector("#save-button");
 const statusMessage = document.querySelector("#status-message");
 const context = preview.getContext("2d");
+const GUIDE_VERTICAL_FIELD_OF_VIEW = 60;
+const GUIDE_CURVE_RATIO = 0.08;
 
 let stream = null;
 let photo = null;
 let capturedAt = null;
 let previewUrl = null;
+let latestOrientation = null;
+let calibration = null;
+let calibrationPending = false;
+let capturedCameraOrientation = null;
+let orientationAccessGranted = false;
+let calibrationTimer = null;
 
 function setStatus(message = "") {
   statusMessage.textContent = message;
+}
+
+function normalizeAngle(angle) {
+  return ((angle + 180) % 360 + 360) % 360 - 180;
+}
+
+function getCameraOrientation() {
+  if (!latestOrientation || !calibration) return null;
+  return {
+    aim: normalizeAngle(latestOrientation.beta - calibration.beta),
+    sideTilt: normalizeAngle(latestOrientation.gamma - calibration.gamma),
+  };
+}
+
+function formatAngle(angle) {
+  const rounded = Math.abs(angle) < 0.05 ? 0 : angle;
+  return `${rounded > 0 ? "+" : ""}${rounded.toFixed(1)}°`;
+}
+
+function updateCameraMetrics() {
+  const orientation = getCameraOrientation();
+  cameraAimValue.textContent = orientation ? formatAngle(orientation.aim) : "--";
+  sideTiltValue.textContent = orientation ? formatAngle(orientation.sideTilt) : "--";
+  renderLiveAngleOverlay();
+}
+
+function recordOrientation(event) {
+  if (!Number.isFinite(event.beta) || !Number.isFinite(event.gamma)) return;
+  latestOrientation = { beta: event.beta, gamma: event.gamma };
+  if (calibrationPending) {
+    window.clearTimeout(calibrationTimer);
+    calibration = latestOrientation;
+    calibrationPending = false;
+    calibrationStatus.textContent = "Calibrated";
+    calibrateButton.textContent = "Recalibrate";
+  }
+  updateCameraMetrics();
+}
+
+async function requestOrientationAccess() {
+  const requestPermission = window.DeviceOrientationEvent?.requestPermission;
+  if (typeof requestPermission === "function") {
+    const permission = await requestPermission.call(window.DeviceOrientationEvent);
+    if (permission !== "granted") {
+      throw new Error("Motion sensor permission was not granted.");
+    }
+  }
+  window.addEventListener("deviceorientation", recordOrientation);
+  orientationAccessGranted = true;
 }
 
 function stopCamera() {
@@ -32,7 +94,12 @@ function stopCamera() {
   }
   camera.srcObject = null;
   camera.removeEventListener("loadedmetadata", renderLiveAngleOverlay);
+  window.removeEventListener("deviceorientation", recordOrientation);
+  latestOrientation = null;
+  cameraAimValue.textContent = "--";
+  sideTiltValue.textContent = "--";
   angleOverlay.hidden = true;
+  cameraMetrics.hidden = true;
 }
 
 function readExifDate(data, tiffStart, tiffLength) {
@@ -146,10 +213,14 @@ async function openCamera() {
     camera.hidden = false;
     preview.hidden = true;
     angleOverlay.hidden = false;
+    cameraMetrics.hidden = false;
     emptyState.hidden = true;
     cameraButton.hidden = true;
     captureButton.hidden = false;
     retakeButton.hidden = true;
+    if (orientationAccessGranted) {
+      window.addEventListener("deviceorientation", recordOrientation);
+    }
     camera.addEventListener("loadedmetadata", renderLiveAngleOverlay, { once: true });
     await camera.play();
     renderLiveAngleOverlay();
@@ -234,35 +305,49 @@ function getSelectedAngleLines() {
   });
 }
 
-function getAngleLineEndpoints(angle, width, height) {
-  const radians = angle * Math.PI / 180;
-  const directionX = Math.cos(radians);
-  const directionY = -Math.sin(radians);
-  const halfLength = Math.min(
-    Math.abs(directionX) < 1e-8 ? Infinity : width / 2 / Math.abs(directionX),
-    Math.abs(directionY) < 1e-8 ? Infinity : height / 2 / Math.abs(directionY),
-  );
-  const centerX = width / 2;
-  const centerY = height / 2;
+function getAngleGuideGeometry(angle, width, height, orientation) {
+  const pixelsPerDegree = height / GUIDE_VERTICAL_FIELD_OF_VIEW;
+  const centerY = height / 2 + (orientation.aim - angle) * pixelsPerDegree;
+  const sideTiltOffset = Math.tan(orientation.sideTilt * Math.PI / 180) * width / 2;
+  const curve = height * GUIDE_CURVE_RATIO * Math.min(angle / 45, 1);
+  const controlY = centerY + curve * 2;
+  const labelT = 0.93;
+  const startY = centerY + sideTiltOffset;
+  const endY = centerY - sideTiltOffset;
+  const labelY = (1 - labelT) ** 2 * (centerY + sideTiltOffset)
+    + 2 * (1 - labelT) * labelT * controlY
+    + labelT ** 2 * (centerY - sideTiltOffset);
   return {
-    x1: centerX - directionX * halfLength,
-    y1: centerY - directionY * halfLength,
-    x2: centerX + directionX * halfLength,
-    y2: centerY + directionY * halfLength,
+    startY,
+    controlY,
+    endY,
+    path: `M 0 ${centerY + sideTiltOffset} Q ${width / 2} ${controlY} ${width} ${centerY - sideTiltOffset}`,
+    labelX: width * labelT,
+    labelY,
   };
 }
 
-function drawAngleLine(angle, color, width, height) {
-  const { x1, y1, x2, y2 } = getAngleLineEndpoints(angle, width, height);
+function drawAngleGuide(angle, color, width, height, orientation) {
+  const { startY, controlY, endY, labelX, labelY } = getAngleGuideGeometry(angle, width, height, orientation);
   context.beginPath();
   context.setLineDash([Math.max(10, width * 0.018), Math.max(6, width * 0.012)]);
   context.lineWidth = Math.max(2, width / 500);
   context.lineCap = "round";
   context.strokeStyle = color;
-  context.moveTo(x1, y1);
-  context.lineTo(x2, y2);
+  context.moveTo(0, startY);
+  context.quadraticCurveTo(width / 2, controlY, width, endY);
   context.stroke();
   context.setLineDash([]);
+
+  context.font = `700 ${Math.max(14, width * 0.035)}px sans-serif`;
+  context.lineJoin = "round";
+  context.textAlign = "right";
+  context.textBaseline = "bottom";
+  context.strokeStyle = "#111";
+  context.lineWidth = Math.max(3, width / 320);
+  context.strokeText(`${angle}°`, labelX, labelY - 5);
+  context.fillStyle = color;
+  context.fillText(`${angle}°`, labelX, labelY - 5);
 }
 
 function renderLiveAngleOverlay() {
@@ -273,17 +358,30 @@ function renderLiveAngleOverlay() {
   angleOverlay.setAttribute("viewBox", `0 0 ${width} ${height}`);
   angleOverlay.replaceChildren();
 
+  const orientation = getCameraOrientation() || { aim: 0, sideTilt: 0 };
   for (const { angle, color } of getSelectedAngleLines()) {
-    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-    const endpoints = getAngleLineEndpoints(angle, width, height);
-    for (const [attribute, value] of Object.entries(endpoints)) {
-      line.setAttribute(attribute, String(value));
-    }
-    line.setAttribute("stroke", color);
-    line.setAttribute("stroke-width", String(Math.max(2, width / 500)));
-    line.setAttribute("stroke-dasharray", `${Math.max(10, width * 0.018)} ${Math.max(6, width * 0.012)}`);
-    line.setAttribute("stroke-linecap", "round");
-    angleOverlay.append(line);
+    const geometry = getAngleGuideGeometry(angle, width, height, orientation);
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", geometry.path);
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", color);
+    path.setAttribute("stroke-width", String(Math.max(2, width / 500)));
+    path.setAttribute("stroke-dasharray", `${Math.max(10, width * 0.018)} ${Math.max(6, width * 0.012)}`);
+    path.setAttribute("stroke-linecap", "round");
+    angleOverlay.append(path);
+
+    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    label.setAttribute("x", String(geometry.labelX));
+    label.setAttribute("y", String(geometry.labelY - 5));
+    label.setAttribute("fill", color);
+    label.setAttribute("stroke", "#111");
+    label.setAttribute("stroke-width", String(Math.max(2, width / 320)));
+    label.setAttribute("paint-order", "stroke");
+    label.setAttribute("text-anchor", "end");
+    label.setAttribute("font-size", String(Math.max(14, width * 0.035)));
+    label.setAttribute("font-weight", "700");
+    label.textContent = `${angle}°`;
+    angleOverlay.append(label);
   }
 }
 
@@ -303,8 +401,9 @@ function renderPreview() {
   const { stamp } = getTimestamp(capturedAt);
   const description = descriptionInput.value.trim();
   const firstLine = description ? `${stamp} · ${description}` : stamp;
+  const orientation = capturedCameraOrientation || { aim: 0, sideTilt: 0 };
   for (const line of getSelectedAngleLines()) {
-    drawAngleLine(line.angle, line.color, width, height);
+    drawAngleGuide(line.angle, line.color, width, height, orientation);
   }
   const maxTextWidth = width - padding * 2;
   const fontFamily = '600 ' + fontSize + 'px "DM Sans", sans-serif';
@@ -343,11 +442,12 @@ function renderPreview() {
   saveButton.disabled = false;
 }
 
-function loadImage(blob, takenAt, statusMessageAfterLoad = "") {
+function loadImage(blob, takenAt, statusMessageAfterLoad = "", orientation = null) {
   if (previewUrl) URL.revokeObjectURL(previewUrl);
   previewUrl = URL.createObjectURL(blob);
   photo = null;
   capturedAt = null;
+  capturedCameraOrientation = orientation;
   saveButton.disabled = true;
   photo = new Image();
   photo.onload = () => {
@@ -376,6 +476,31 @@ function loadImage(blob, takenAt, statusMessageAfterLoad = "") {
 
 cameraButton.addEventListener("click", openCamera);
 
+if (!("DeviceOrientationEvent" in window)) {
+  calibrateButton.disabled = true;
+  calibrationStatus.textContent = "Tilt sensor unavailable";
+}
+
+calibrateButton.addEventListener("click", async () => {
+  calibrationPending = true;
+  latestOrientation = null;
+  calibrationStatus.textContent = "Waiting for sensor…";
+  try {
+    await requestOrientationAccess();
+    calibrationTimer = window.setTimeout(() => {
+      if (!calibrationPending) return;
+      calibrationPending = false;
+      calibrationStatus.textContent = "Tilt sensor unavailable";
+      setStatus("No tilt sensor reading received. Check motion sensor access and try again.");
+    }, 5000);
+  } catch (error) {
+    window.clearTimeout(calibrationTimer);
+    calibrationPending = false;
+    calibrationStatus.textContent = "Not calibrated";
+    setStatus(error.message || "Could not access the tilt sensor.");
+  }
+});
+
 captureButton.addEventListener("click", () => {
   if (!camera.videoWidth || !camera.videoHeight) {
     setStatus("The camera is not ready yet. Try again in a moment.");
@@ -387,13 +512,14 @@ captureButton.addEventListener("click", () => {
   capturedPhoto.height = camera.videoHeight;
   capturedPhoto.getContext("2d").drawImage(camera, 0, 0);
   const takenAt = new Date();
+  const orientation = getCameraOrientation();
   capturedPhoto.toBlob((blob) => {
     if (!blob) {
       setStatus("Could not capture the photo. Please try again.");
       return;
     }
     stopCamera();
-    loadImage(blob, takenAt);
+    loadImage(blob, takenAt, "", orientation);
   }, "image/jpeg", 0.95);
 });
 

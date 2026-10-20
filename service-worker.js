@@ -1,4 +1,4 @@
-const CACHE_NAME = "field-stamp-v7";
+const CACHE_NAME = "field-stamp-v8";
 const APP_FILES = [
   "./",
   "./index.html",

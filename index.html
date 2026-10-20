@@ -22,6 +22,16 @@
 
       <section class="capture-panel" aria-label="Photo">
         <div class="media-stage" id="media-stage">
+          <div class="camera-metrics" id="camera-metrics" hidden>
+            <div class="metric-readings">
+              <span>Camera aim <strong id="camera-aim">--</strong></span>
+              <span>Side tilt <strong id="side-tilt">--</strong></span>
+            </div>
+            <div class="calibration-row">
+              <span id="calibration-status">Not calibrated</span>
+              <button id="calibrate-button" type="button">Calibrate level</button>
+            </div>
+          </div>
           <div class="empty-state" id="empty-state">
             <span class="camera-mark" aria-hidden="true">+</span>
             <p>Your photo will appear here</p>
@@ -60,7 +70,7 @@
 
         <fieldset class="angle-lines">
           <legend>Photo angle lines</legend>
-          <p class="angle-help">Dashed lines show on the camera preview and saved photo. Angles rise above horizontal to the right.</p>
+          <p class="angle-help">Curved guides show the selected elevation above horizontal. Aim the camera at the horizon and calibrate level to align them.</p>
           <div class="angle-option">
             <label><input class="angle-enabled" type="checkbox" data-angle="0" checked> Horizontal (0°)</label>
             <select class="angle-color" data-angle="0" aria-label="Horizontal line colour">

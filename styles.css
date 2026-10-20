@@ -108,6 +108,50 @@ h2 {
   background: #eff2ed;
 }
 
+.camera-metrics {
+  position: absolute;
+  z-index: 1;
+  inset: 0 0 auto;
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px;
+  background: rgb(0 0 0 / 82%);
+  color: #fff;
+}
+
+.metric-readings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  font-size: 13px;
+}
+
+.metric-readings strong {
+  font-size: 16px;
+}
+
+.calibration-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: #f4c542;
+  font-size: 11px;
+}
+
+#calibrate-button {
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid rgb(255 255 255 / 50%);
+  border-radius: 9px;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .empty-state {
   display: flex;
   flex-direction: column;
