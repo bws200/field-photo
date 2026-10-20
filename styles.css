@@ -1,0 +1,406 @@
+:root {
+  color-scheme: light;
+  font-family: "DM Sans", sans-serif;
+  color: #1c2924;
+  background: #f4f5f1;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --ink: #1c2924;
+  --muted: #78827d;
+  --green: #275b46;
+  --green-dark: #1d4736;
+  --line: #e6e9e3;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0 18px max(28px, env(safe-area-inset-bottom));
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button,
+.file-button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app-shell {
+  width: min(100%, 520px);
+  margin: 0 auto;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 2px 22px;
+}
+
+.eyebrow {
+  margin: 0 0 5px;
+  color: var(--green);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.7px;
+}
+
+h1,
+h2 {
+  margin: 0;
+  font-family: Manrope, sans-serif;
+  letter-spacing: -0.6px;
+}
+
+h1 {
+  font-size: 25px;
+  font-weight: 800;
+}
+
+h2 {
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.header-mark {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid #dce6dd;
+  border-radius: 14px;
+  background: #e9f0e9;
+  color: var(--green);
+  font-family: Manrope, sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.capture-panel,
+.stamp-panel {
+  overflow: hidden;
+  border: 1px solid #e9ece6;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 6px 24px rgb(34 50 41 / 4%);
+}
+
+.media-stage {
+  position: relative;
+  display: grid;
+  min-height: 215px;
+  max-height: 440px;
+  overflow: hidden;
+  place-items: center;
+  background: #eff2ed;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 35px 16px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.camera-mark {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 15px;
+  place-items: center;
+  border: 1px solid #dbe4db;
+  border-radius: 16px;
+  background: #e8eee7;
+  color: var(--green);
+  font-size: 27px;
+  font-weight: 400;
+}
+
+.empty-state p {
+  margin: 0 0 5px;
+  color: #36423c;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.hint {
+  font-size: 12px;
+}
+
+#camera,
+#preview {
+  display: block;
+  width: 100%;
+  max-height: 440px;
+  object-fit: contain;
+}
+
+#camera {
+  transform: scaleX(-1);
+}
+
+#camera[hidden],
+#preview[hidden],
+.empty-state[hidden] {
+  display: none;
+}
+
+.status-message {
+  min-height: 0;
+  margin: 0;
+  padding: 0 18px;
+  color: #a13e2a;
+  font-size: 12px;
+}
+
+.status-message:not(:empty) {
+  padding-top: 12px;
+}
+
+.capture-actions {
+  display: flex;
+  gap: 9px;
+  padding: 14px 16px 16px;
+}
+
+.button {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  transition: background 120ms ease, transform 120ms ease;
+}
+
+.button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.button-primary {
+  flex: 1;
+  background: var(--green);
+  color: #fff;
+}
+
+.button-primary:hover {
+  background: var(--green-dark);
+}
+
+.button-secondary {
+  padding: 0 15px;
+  background: #f0f3ef;
+  color: #34443b;
+}
+
+.file-button {
+  flex: 1;
+}
+
+#file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.stamp-panel {
+  margin-top: 14px;
+  padding: 20px 18px 18px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 21px;
+}
+
+.time-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 7px 9px;
+  border-radius: 20px;
+  background: #eef5ef;
+  color: #446c53;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.time-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #5c9a6b;
+}
+
+.field-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  color: #354139;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.field-label span {
+  color: #89918b;
+  font-size: 10px;
+  font-weight: 400;
+  text-align: right;
+}
+
+.text-input {
+  display: block;
+  width: 100%;
+  border: 1px solid #e0e5de;
+  border-radius: 11px;
+  outline: none;
+  background: #fbfcfa;
+  color: var(--ink);
+  font-size: 14px;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.text-input:focus {
+  border-color: #83a98e;
+  box-shadow: 0 0 0 3px rgb(71 127 85 / 10%);
+}
+
+.text-input::placeholder {
+  color: #a5ada6;
+}
+
+input.text-input {
+  height: 46px;
+  padding: 0 12px;
+}
+
+.second-label {
+  margin-top: 17px;
+}
+
+.note-input {
+  min-height: 64px;
+  padding: 11px 12px;
+  resize: vertical;
+}
+
+.filename-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 60px;
+  margin: 18px 0 14px;
+  padding: 10px 12px;
+  border: 1px solid #e8ece6;
+  border-radius: 12px;
+  background: #f7f9f6;
+}
+
+.filename-icon {
+  color: var(--green);
+  font-size: 20px;
+}
+
+.filename-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.filename-label {
+  color: #8a938c;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+}
+
+.filename-value {
+  overflow-wrap: anywhere;
+  color: #344239;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.button-save {
+  width: 100%;
+  background: var(--green);
+  color: #fff;
+  font-size: 14px;
+}
+
+.button-save:hover:not(:disabled) {
+  background: var(--green-dark);
+}
+
+.button-save:disabled {
+  cursor: not-allowed;
+  background: #dfe5df;
+  color: #98a29a;
+}
+
+.privacy-note {
+  margin: 11px 0 0;
+  color: #919a93;
+  font-size: 10px;
+  text-align: center;
+}
+
+.app-footer {
+  padding: 19px 0 4px;
+  color: #969e98;
+  font-size: 10px;
+  text-align: center;
+}
+
+@media (max-width: 380px) {
+  body {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .stamp-panel {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .capture-actions {
+    gap: 7px;
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .button-secondary {
+    padding: 0 11px;
+  }
+}

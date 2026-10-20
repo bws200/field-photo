@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#17201d">
+    <meta name="description" content="Take a photo, add a date and description stamp, and save it to your device.">
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="icon" href="./icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="./styles.css">
+    <title>Field Stamp</title>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="app-header">
+        <div>
+          <p class="eyebrow">CAMERA NOTES</p>
+          <h1>Field Stamp</h1>
+        </div>
+        <span class="header-mark" aria-hidden="true">F</span>
+      </header>
+
+      <section class="capture-panel" aria-label="Photo">
+        <div class="media-stage" id="media-stage">
+          <div class="empty-state" id="empty-state">
+            <span class="camera-mark" aria-hidden="true">+</span>
+            <p>Your photo will appear here</p>
+            <span class="hint">Use your camera or choose an image</span>
+          </div>
+          <video id="camera" autoplay playsinline muted hidden></video>
+          <canvas id="preview" aria-label="Photo preview with text stamp" hidden></canvas>
+        </div>
+        <p class="status-message" id="status-message" role="status" aria-live="polite"></p>
+        <div class="capture-actions">
+          <button class="button button-primary" id="camera-button" type="button">
+            <span aria-hidden="true">◎</span> Open camera
+          </button>
+          <button class="button button-secondary" id="capture-button" type="button" hidden>Take photo</button>
+          <button class="button button-secondary" id="retake-button" type="button" hidden>Retake</button>
+          <label class="button button-secondary file-button" for="file-input">Choose photo</label>
+          <input id="file-input" type="file" accept="image/*" capture="environment">
+        </div>
+      </section>
+
+      <section class="stamp-panel" aria-labelledby="stamp-heading">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">YOUR PHOTO, YOUR NOTES</p>
+            <h2 id="stamp-heading">Stamp details</h2>
+          </div>
+          <span class="time-badge"><span class="time-dot"></span> Time is automatic</span>
+        </div>
+
+        <label class="field-label" for="description">Line 1 <span>Date, time + short description</span></label>
+        <input id="description" class="text-input" type="text" maxlength="120" placeholder="e.g. South bank erosion" autocomplete="off">
+
+        <label class="field-label second-label" for="note">Line 2 <span>Free text · not in filename</span></label>
+        <textarea id="note" class="text-input note-input" rows="2" maxlength="300" placeholder="Add any extra details..." autocomplete="off"></textarea>
+
+        <div class="filename-card" id="filename-card">
+          <span class="filename-icon" aria-hidden="true">↳</span>
+          <span class="filename-copy">
+            <span class="filename-label">SAVED AS</span>
+            <span class="filename-value" id="filename">Your filename will appear here</span>
+          </span>
+        </div>
+
+        <button class="button button-save" id="save-button" type="button" disabled>
+          <span aria-hidden="true">↓</span> Save stamped photo
+        </button>
+        <p class="privacy-note">Your photos stay on your device. Nothing is uploaded.</p>
+      </section>
+      <footer class="app-footer">Made for the moments worth remembering.</footer>
+    </main>
+    <script src="./app.js" defer></script>
+  </body>
+</html>
