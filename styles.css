@@ -150,10 +150,6 @@ h2 {
   object-fit: contain;
 }
 
-#camera {
-  transform: scaleX(-1);
-}
-
 #camera[hidden],
 #preview[hidden],
 .empty-state[hidden] {
