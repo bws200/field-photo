@@ -1,4 +1,5 @@
 const camera = document.querySelector("#camera");
+const angleOverlay = document.querySelector("#angle-overlay");
 const preview = document.querySelector("#preview");
 const emptyState = document.querySelector("#empty-state");
 const cameraButton = document.querySelector("#camera-button");
@@ -30,6 +31,8 @@ function stopCamera() {
     stream = null;
   }
   camera.srcObject = null;
+  camera.removeEventListener("loadedmetadata", renderLiveAngleOverlay);
+  angleOverlay.hidden = true;
 }
 
 function readExifDate(data, tiffStart, tiffLength) {
@@ -142,11 +145,14 @@ async function openCamera() {
     camera.srcObject = stream;
     camera.hidden = false;
     preview.hidden = true;
+    angleOverlay.hidden = false;
     emptyState.hidden = true;
     cameraButton.hidden = true;
     captureButton.hidden = false;
     retakeButton.hidden = true;
+    camera.addEventListener("loadedmetadata", renderLiveAngleOverlay, { once: true });
     await camera.play();
+    renderLiveAngleOverlay();
   } catch (error) {
     stopCamera();
     camera.hidden = true;
@@ -222,13 +228,13 @@ function getSelectedAngleLines() {
     const angle = input.dataset.angle === "custom"
       ? customAngleInput.valueAsNumber
       : Number(input.dataset.angle);
-    if (!Number.isFinite(angle) || angle < -90 || angle > 90) return [];
+    if (!Number.isFinite(angle) || angle < 0 || angle > 90) return [];
     const color = angleColorInputs.find((select) => select.dataset.angle === input.dataset.angle)?.value;
     return [{ angle, color }];
   });
 }
 
-function drawAngleLine(angle, color, width, height) {
+function getAngleLineEndpoints(angle, width, height) {
   const radians = angle * Math.PI / 180;
   const directionX = Math.cos(radians);
   const directionY = -Math.sin(radians);
@@ -238,16 +244,47 @@ function drawAngleLine(angle, color, width, height) {
   );
   const centerX = width / 2;
   const centerY = height / 2;
+  return {
+    x1: centerX - directionX * halfLength,
+    y1: centerY - directionY * halfLength,
+    x2: centerX + directionX * halfLength,
+    y2: centerY + directionY * halfLength,
+  };
+}
 
+function drawAngleLine(angle, color, width, height) {
+  const { x1, y1, x2, y2 } = getAngleLineEndpoints(angle, width, height);
   context.beginPath();
   context.setLineDash([Math.max(10, width * 0.018), Math.max(6, width * 0.012)]);
   context.lineWidth = Math.max(2, width / 500);
   context.lineCap = "round";
   context.strokeStyle = color;
-  context.moveTo(centerX - directionX * halfLength, centerY - directionY * halfLength);
-  context.lineTo(centerX + directionX * halfLength, centerY + directionY * halfLength);
+  context.moveTo(x1, y1);
+  context.lineTo(x2, y2);
   context.stroke();
   context.setLineDash([]);
+}
+
+function renderLiveAngleOverlay() {
+  if (!camera.videoWidth || !camera.videoHeight) return;
+
+  const width = camera.videoWidth;
+  const height = camera.videoHeight;
+  angleOverlay.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  angleOverlay.replaceChildren();
+
+  for (const { angle, color } of getSelectedAngleLines()) {
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    const endpoints = getAngleLineEndpoints(angle, width, height);
+    for (const [attribute, value] of Object.entries(endpoints)) {
+      line.setAttribute(attribute, String(value));
+    }
+    line.setAttribute("stroke", color);
+    line.setAttribute("stroke-width", String(Math.max(2, width / 500)));
+    line.setAttribute("stroke-dasharray", `${Math.max(10, width * 0.018)} ${Math.max(6, width * 0.012)}`);
+    line.setAttribute("stroke-linecap", "round");
+    angleOverlay.append(line);
+  }
 }
 
 function renderPreview() {
@@ -383,9 +420,14 @@ fileInput.addEventListener("change", async () => {
 
 descriptionInput.addEventListener("input", renderPreview);
 noteInput.addEventListener("input", renderPreview);
-angleEnabledInputs.forEach((input) => input.addEventListener("change", renderPreview));
-angleColorInputs.forEach((input) => input.addEventListener("change", renderPreview));
-customAngleInput.addEventListener("input", renderPreview);
+function updateAngleLines() {
+  renderPreview();
+  renderLiveAngleOverlay();
+}
+
+angleEnabledInputs.forEach((input) => input.addEventListener("change", updateAngleLines));
+angleColorInputs.forEach((input) => input.addEventListener("change", updateAngleLines));
+customAngleInput.addEventListener("input", updateAngleLines);
 
 saveButton.addEventListener("click", () => {
   if (!photo) return;

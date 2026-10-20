@@ -28,6 +28,7 @@
             <span class="hint">Use your camera or choose an image</span>
           </div>
           <video id="camera" autoplay playsinline muted hidden></video>
+          <svg id="angle-overlay" aria-hidden="true" hidden></svg>
           <canvas id="preview" aria-label="Photo preview with text stamp" hidden></canvas>
         </div>
         <p class="status-message" id="status-message" role="status" aria-live="polite"></p>
@@ -59,7 +60,7 @@
 
         <fieldset class="angle-lines">
           <legend>Photo angle lines</legend>
-          <p class="angle-help">Dashed lines are drawn across the saved photo. Positive angles rise to the right.</p>
+          <p class="angle-help">Dashed lines show on the camera preview and saved photo. Angles rise above horizontal to the right.</p>
           <div class="angle-option">
             <label><input class="angle-enabled" type="checkbox" data-angle="0" checked> Horizontal (0°)</label>
             <select class="angle-color" data-angle="0" aria-label="Horizontal line colour">
@@ -94,7 +95,7 @@
             <label class="custom-angle-label">
               <input id="custom-angle-enabled" class="angle-enabled" type="checkbox">
               Other
-              <input id="custom-angle" class="angle-number" type="number" min="-90" max="90" step="1" value="15" aria-label="Other angle in degrees">
+              <input id="custom-angle" class="angle-number" type="number" min="1" max="90" step="1" value="15" aria-label="Other angle in degrees">
               °
             </label>
             <select class="angle-color" data-angle="custom" aria-label="Other angle line colour">
