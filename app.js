@@ -1,5 +1,6 @@
 const camera = document.querySelector("#camera");
 const angleOverlay = document.querySelector("#angle-overlay");
+const mediaStage = document.querySelector("#media-stage");
 const cameraMetrics = document.querySelector("#camera-metrics");
 const cameraAimValue = document.querySelector("#camera-aim");
 const sideTiltValue = document.querySelector("#side-tilt");
@@ -93,13 +94,24 @@ function stopCamera() {
     stream = null;
   }
   camera.srcObject = null;
-  camera.removeEventListener("loadedmetadata", renderLiveAngleOverlay);
+  camera.removeEventListener("loadedmetadata", updateCameraFrame);
   window.removeEventListener("deviceorientation", recordOrientation);
   latestOrientation = null;
   cameraAimValue.textContent = "--";
   sideTiltValue.textContent = "--";
   angleOverlay.hidden = true;
   cameraMetrics.hidden = true;
+}
+
+function updateMediaFrame(width, height) {
+  if (!width || !height) return;
+  mediaStage.classList.add("has-media");
+  mediaStage.style.aspectRatio = `${width} / ${height}`;
+}
+
+function updateCameraFrame() {
+  updateMediaFrame(camera.videoWidth, camera.videoHeight);
+  renderLiveAngleOverlay();
 }
 
 function readExifDate(data, tiffStart, tiffLength) {
@@ -221,9 +233,9 @@ async function openCamera() {
     if (orientationAccessGranted) {
       window.addEventListener("deviceorientation", recordOrientation);
     }
-    camera.addEventListener("loadedmetadata", renderLiveAngleOverlay, { once: true });
+    camera.addEventListener("loadedmetadata", updateCameraFrame, { once: true });
     await camera.play();
-    renderLiveAngleOverlay();
+    updateCameraFrame();
   } catch (error) {
     stopCamera();
     camera.hidden = true;
@@ -323,17 +335,26 @@ function getAngleGuideGeometry(angle, width, height, orientation) {
     endY,
     path: `M 0 ${centerY + sideTiltOffset} Q ${width / 2} ${controlY} ${width} ${centerY - sideTiltOffset}`,
     labelX: width * labelT,
-    labelY,
+    labelY: Math.max(Math.max(14, width * 0.035) + 5, Math.min(height - 5, labelY)),
   };
 }
 
 function drawAngleGuide(angle, color, width, height, orientation) {
   const { startY, controlY, endY, labelX, labelY } = getAngleGuideGeometry(angle, width, height, orientation);
   context.beginPath();
-  context.setLineDash([Math.max(10, width * 0.018), Math.max(6, width * 0.012)]);
-  context.lineWidth = Math.max(2, width / 500);
+  const dash = [Math.max(10, width * 0.018), Math.max(6, width * 0.012)];
+  const lineWidth = Math.max(2, width / 500);
+  context.setLineDash(dash);
   context.lineCap = "round";
+  context.strokeStyle = "#111";
+  context.lineWidth = lineWidth + Math.max(2, width / 320);
+  context.moveTo(0, startY);
+  context.quadraticCurveTo(width / 2, controlY, width, endY);
+  context.stroke();
+
+  context.beginPath();
   context.strokeStyle = color;
+  context.lineWidth = lineWidth;
   context.moveTo(0, startY);
   context.quadraticCurveTo(width / 2, controlY, width, endY);
   context.stroke();
@@ -361,12 +382,23 @@ function renderLiveAngleOverlay() {
   const orientation = getCameraOrientation() || { aim: 0, sideTilt: 0 };
   for (const { angle, color } of getSelectedAngleLines()) {
     const geometry = getAngleGuideGeometry(angle, width, height, orientation);
+    const dash = `${Math.max(10, width * 0.018)} ${Math.max(6, width * 0.012)}`;
+    const strokeWidth = Math.max(2, width / 500);
+    const outline = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    outline.setAttribute("d", geometry.path);
+    outline.setAttribute("fill", "none");
+    outline.setAttribute("stroke", "#111");
+    outline.setAttribute("stroke-width", String(strokeWidth + Math.max(2, width / 320)));
+    outline.setAttribute("stroke-dasharray", dash);
+    outline.setAttribute("stroke-linecap", "round");
+    angleOverlay.append(outline);
+
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("d", geometry.path);
     path.setAttribute("fill", "none");
     path.setAttribute("stroke", color);
-    path.setAttribute("stroke-width", String(Math.max(2, width / 500)));
-    path.setAttribute("stroke-dasharray", `${Math.max(10, width * 0.018)} ${Math.max(6, width * 0.012)}`);
+    path.setAttribute("stroke-width", String(strokeWidth));
+    path.setAttribute("stroke-dasharray", dash);
     path.setAttribute("stroke-linecap", "round");
     angleOverlay.append(path);
 
@@ -419,6 +451,7 @@ function renderPreview() {
   context.fillStyle = "rgba(10, 17, 14, 0.76)";
   context.fillRect(0, height - footerHeight, width, footerHeight);
   context.font = fontFamily;
+  context.textAlign = "left";
   context.textBaseline = "top";
   context.fillStyle = "#ffffff";
 
@@ -452,6 +485,7 @@ function loadImage(blob, takenAt, statusMessageAfterLoad = "", orientation = nul
   photo = new Image();
   photo.onload = () => {
     capturedAt = takenAt;
+    updateMediaFrame(photo.naturalWidth || photo.width, photo.naturalHeight || photo.height);
     camera.hidden = true;
     preview.hidden = false;
     emptyState.hidden = true;
@@ -464,6 +498,8 @@ function loadImage(blob, takenAt, statusMessageAfterLoad = "", orientation = nul
   photo.onerror = () => {
     photo = null;
     capturedAt = null;
+    mediaStage.classList.remove("has-media");
+    mediaStage.style.removeProperty("aspect-ratio");
     preview.hidden = true;
     emptyState.hidden = false;
     cameraButton.hidden = false;
