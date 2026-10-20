@@ -128,11 +128,6 @@ function getExifTakenAt(buffer) {
 
 async function openCamera() {
   setStatus("");
-  if (window.matchMedia("(pointer: coarse)").matches) {
-    fileInput.click();
-    return;
-  }
-
   if (!navigator.mediaDevices?.getUserMedia) {
     setStatus("Camera access is not available here. Choose a photo instead.");
     return;
