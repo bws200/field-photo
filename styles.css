@@ -310,37 +310,77 @@ input.text-input {
   resize: vertical;
 }
 
-.elevation-option {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin-top: 16px;
+.angle-lines {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin: 16px 0 0;
+  padding: 12px;
+  border: 1px solid #e8ece6;
+  border-radius: 12px;
+  background: #fbfcfa;
+}
+
+.angle-lines legend {
+  padding: 0 4px;
   color: #354139;
-  cursor: pointer;
-}
-
-.elevation-option input {
-  width: 17px;
-  height: 17px;
-  flex: 0 0 auto;
-  margin: 1px 0 0;
-  accent-color: var(--green);
-}
-
-.elevation-option span {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.elevation-option strong {
   font-size: 12px;
+  font-weight: 700;
 }
 
-.elevation-option small {
+.angle-help {
+  margin: -4px 0 2px;
   color: #89918b;
   font-size: 10px;
   line-height: 1.4;
+}
+
+.angle-option {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #354139;
+  font-size: 12px;
+}
+
+.angle-option label {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+}
+
+.angle-option input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  accent-color: var(--green);
+}
+
+.angle-color {
+  min-height: 32px;
+  padding: 0 8px;
+  border: 1px solid #e0e5de;
+  border-radius: 8px;
+  background: #fff;
+  color: #354139;
+  font: inherit;
+  font-size: 11px;
+}
+
+.angle-number {
+  width: 58px;
+  height: 32px;
+  padding: 0 5px;
+  border: 1px solid #e0e5de;
+  border-radius: 8px;
+  background: #fff;
+  color: #354139;
+  font: inherit;
+  text-align: center;
 }
 
 .filename-card {

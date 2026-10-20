@@ -57,13 +57,55 @@
         <label class="field-label second-label" for="note">Line 2 <span>Free text · not in filename</span></label>
         <textarea id="note" class="text-input note-input" rows="2" maxlength="300" placeholder="Add any extra details..." autocomplete="off"></textarea>
 
-        <label class="elevation-option" for="elevation-toggle">
-          <input id="elevation-toggle" type="checkbox">
-          <span>
-            <strong>Add camera elevation</strong>
-            <small id="elevation-help">Measure camera tilt from horizontal and include it in the photo stamp.</small>
-          </span>
-        </label>
+        <fieldset class="angle-lines">
+          <legend>Photo angle lines</legend>
+          <p class="angle-help">Dashed lines are drawn across the saved photo. Positive angles rise to the right.</p>
+          <div class="angle-option">
+            <label><input class="angle-enabled" type="checkbox" data-angle="0" checked> Horizontal (0°)</label>
+            <select class="angle-color" data-angle="0" aria-label="Horizontal line colour">
+              <option value="#f4c542">Yellow</option>
+              <option value="#e4473a">Red</option>
+              <option value="#4da3ff">Blue</option>
+              <option value="#ffffff">White</option>
+              <option value="#35a66f">Green</option>
+            </select>
+          </div>
+          <div class="angle-option">
+            <label><input class="angle-enabled" type="checkbox" data-angle="30"> 30°</label>
+            <select class="angle-color" data-angle="30" aria-label="30 degree line colour">
+              <option value="#e4473a">Red</option>
+              <option value="#f4c542">Yellow</option>
+              <option value="#4da3ff">Blue</option>
+              <option value="#ffffff">White</option>
+              <option value="#35a66f">Green</option>
+            </select>
+          </div>
+          <div class="angle-option">
+            <label><input class="angle-enabled" type="checkbox" data-angle="45"> 45°</label>
+            <select class="angle-color" data-angle="45" aria-label="45 degree line colour">
+              <option value="#4da3ff">Blue</option>
+              <option value="#f4c542">Yellow</option>
+              <option value="#e4473a">Red</option>
+              <option value="#ffffff">White</option>
+              <option value="#35a66f">Green</option>
+            </select>
+          </div>
+          <div class="angle-option">
+            <label class="custom-angle-label">
+              <input id="custom-angle-enabled" class="angle-enabled" type="checkbox">
+              Other
+              <input id="custom-angle" class="angle-number" type="number" min="-90" max="90" step="1" value="15" aria-label="Other angle in degrees">
+              °
+            </label>
+            <select class="angle-color" data-angle="custom" aria-label="Other angle line colour">
+              <option value="#35a66f">Green</option>
+              <option value="#f4c542">Yellow</option>
+              <option value="#e4473a">Red</option>
+              <option value="#4da3ff">Blue</option>
+              <option value="#ffffff">White</option>
+            </select>
+          </div>
+        </fieldset>
 
         <div class="filename-card" id="filename-card">
           <span class="filename-icon" aria-hidden="true">↳</span>
