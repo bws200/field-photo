@@ -108,55 +108,6 @@ h2 {
   background: #eff2ed;
 }
 
-.media-stage.has-media {
-  min-height: 0;
-  max-height: none;
-}
-
-.camera-metrics {
-  position: absolute;
-  z-index: 1;
-  inset: 0 0 auto;
-  display: grid;
-  gap: 10px;
-  padding: 12px 14px;
-  background: rgb(0 0 0 / 82%);
-  color: #fff;
-}
-
-.metric-readings {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 18px;
-  font-size: 13px;
-}
-
-.metric-readings strong {
-  font-size: 16px;
-}
-
-.calibration-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  color: #f4c542;
-  font-size: 11px;
-}
-
-#calibrate-button {
-  min-height: 34px;
-  padding: 0 11px;
-  border: 1px solid rgb(255 255 255 / 50%);
-  border-radius: 9px;
-  background: transparent;
-  color: #fff;
-  font: inherit;
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -195,22 +146,12 @@ h2 {
 #preview {
   display: block;
   width: 100%;
-  height: 100%;
+  max-height: 440px;
   object-fit: contain;
-}
-
-#angle-overlay {
-  position: absolute;
-  z-index: 2;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
 }
 
 #camera[hidden],
 #preview[hidden],
-#angle-overlay[hidden],
 .empty-state[hidden] {
   display: none;
 }
@@ -367,79 +308,6 @@ input.text-input {
   min-height: 64px;
   padding: 11px 12px;
   resize: vertical;
-}
-
-.angle-lines {
-  display: grid;
-  gap: 8px;
-  min-width: 0;
-  margin: 16px 0 0;
-  padding: 12px;
-  border: 1px solid #e8ece6;
-  border-radius: 12px;
-  background: #fbfcfa;
-}
-
-.angle-lines legend {
-  padding: 0 4px;
-  color: #354139;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.angle-help {
-  margin: -4px 0 2px;
-  color: #89918b;
-  font-size: 10px;
-  line-height: 1.4;
-}
-
-.angle-option {
-  display: flex;
-  min-height: 34px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  color: #354139;
-  font-size: 12px;
-}
-
-.angle-option label {
-  display: inline-flex;
-  min-width: 0;
-  align-items: center;
-  gap: 7px;
-  cursor: pointer;
-}
-
-.angle-option input[type="checkbox"] {
-  width: 17px;
-  height: 17px;
-  margin: 0;
-  accent-color: var(--green);
-}
-
-.angle-color {
-  min-height: 32px;
-  padding: 0 8px;
-  border: 1px solid #e0e5de;
-  border-radius: 8px;
-  background: #fff;
-  color: #354139;
-  font: inherit;
-  font-size: 11px;
-}
-
-.angle-number {
-  width: 58px;
-  height: 32px;
-  padding: 0 5px;
-  border: 1px solid #e0e5de;
-  border-radius: 8px;
-  background: #fff;
-  color: #354139;
-  font: inherit;
-  text-align: center;
 }
 
 .filename-card {
