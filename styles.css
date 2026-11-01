@@ -213,7 +213,8 @@ h2 {
   flex: 1;
 }
 
-#file-input {
+#file-input,
+#camera-file-input {
   position: absolute;
   width: 1px;
   height: 1px;

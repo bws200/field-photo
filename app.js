@@ -5,6 +5,7 @@ const cameraButton = document.querySelector("#camera-button");
 const captureButton = document.querySelector("#capture-button");
 const retakeButton = document.querySelector("#retake-button");
 const fileInput = document.querySelector("#file-input");
+const cameraFileInput = document.querySelector("#camera-file-input");
 const descriptionInput = document.querySelector("#description");
 const noteInput = document.querySelector("#note");
 const filenameElement = document.querySelector("#filename");
@@ -126,7 +127,7 @@ function getExifTakenAt(buffer) {
 async function openCamera() {
   setStatus("");
   if (window.matchMedia("(pointer: coarse)").matches) {
-    fileInput.click();
+    cameraFileInput.click();
     return;
   }
 
@@ -327,8 +328,8 @@ captureButton.addEventListener("click", () => {
 
 retakeButton.addEventListener("click", openCamera);
 
-fileInput.addEventListener("change", async () => {
-  const [file] = fileInput.files;
+async function handlePhotoSelection(input) {
+  const [file] = input.files;
   if (file) {
     stopCamera();
     try {
@@ -343,8 +344,11 @@ fileInput.addEventListener("change", async () => {
       loadImage(file, new Date(file.lastModified), "Could not read capture metadata; using the file's modified time.");
     }
   }
-  fileInput.value = "";
-});
+  input.value = "";
+}
+
+fileInput.addEventListener("change", () => handlePhotoSelection(fileInput));
+cameraFileInput.addEventListener("change", () => handlePhotoSelection(cameraFileInput));
 
 descriptionInput.addEventListener("input", renderPreview);
 noteInput.addEventListener("input", renderPreview);
