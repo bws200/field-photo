@@ -12,7 +12,9 @@ const APP_FILES = [
 ];
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_FILES)));
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(
+    APP_FILES.map((path) => new Request(new URL(path, self.registration.scope), { cache: "reload" })),
+  )));
   self.skipWaiting();
 });
 
@@ -29,6 +31,7 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET" || new URL(event.request.url).origin !== self.location.origin) return;
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request)),
+    caches.open(CACHE_NAME).then((cache) => cache.match(event.request)
+      .then((cached) => cached || fetch(event.request))),
   );
 });
