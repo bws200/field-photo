@@ -27,9 +27,38 @@ jobs:
         run: |
           mkdir _site
           cp index.html app.js styles.css manifest.webmanifest service-worker.js icon.svg icon-192.png icon-512.png _site/
-          version="${GITHUB_SHA::7}"
-          sed -i "s|id=\"app-version\">dev</span>|id=\"app-version\">${version}</span>|" _site/index.html
-          sed -i "s|const APP_VERSION = \"dev\";|const APP_VERSION = \"${version}\";|" _site/service-worker.js
+          python3 - <<'PY'
+          import html
+          import pathlib
+          import subprocess
+          import os
+
+          version = os.environ["GITHUB_SHA"][:7]
+          message = subprocess.run(
+              ["git", "log", "-1", "--format=%s"],
+              check=True,
+              capture_output=True,
+              text=True,
+          ).stdout.strip()
+
+          replacements = {
+              pathlib.Path("_site/index.html"): (
+                  ('id="app-version">dev</span>', f'id="app-version">{version}</span>'),
+                  ('id="app-commit-message">local version</span>',
+                   f'id="app-commit-message">{html.escape(message)}</span>'),
+              ),
+              pathlib.Path("_site/service-worker.js"): (
+                  ('const APP_VERSION = "dev";', f'const APP_VERSION = "{version}";'),
+              ),
+          }
+          for path, pairs in replacements.items():
+              content = path.read_text()
+              for old, new in pairs:
+                  if old not in content:
+                      raise RuntimeError(f"Build placeholder not found in {path}: {old}")
+                  content = content.replace(old, new, 1)
+              path.write_text(content)
+          PY
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

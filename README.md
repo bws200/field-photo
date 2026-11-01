@@ -14,4 +14,4 @@ Photos are processed in the browser and are not uploaded.
 
 The app is static and requires no build command. The workflow copies only the app files into the Pages artifact, and its relative asset paths work for both project and user sites. Camera access requires HTTPS (GitHub Pages provides it) or localhost. The app shell is cached for offline use after its first visit. On launch, the app checks for a new deployment, refreshes automatically when one is installed, and removes older Pages deployment records. You do not need to clear site data to update. Camera permissions and saving still depend on Android and the browser.
 
-The footer shows the short commit ID of the deployed build, which you can use to identify the version installed on your phone. A locally served copy shows `dev`.
+The footer shows the short commit ID and commit subject of the deployed build, which you can use to identify the version installed on your phone. A locally served copy shows `dev` and `local version`.
