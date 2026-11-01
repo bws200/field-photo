@@ -26,6 +26,9 @@ jobs:
         run: |
           mkdir _site
           cp index.html app.js styles.css manifest.webmanifest service-worker.js icon.svg icon-192.png icon-512.png _site/
+          version="${GITHUB_SHA::7}"
+          sed -i "s|id=\"app-version\">dev</span>|id=\"app-version\">${version}</span>|" _site/index.html
+          sed -i "s|const APP_VERSION = \"dev\";|const APP_VERSION = \"${version}\";|" _site/service-worker.js
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
